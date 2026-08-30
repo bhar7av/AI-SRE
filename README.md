@@ -2,6 +2,9 @@
 AI-powered Site Reliability Engineering platform for intelligent incident detection, investigation, root cause analysis, and safe remediation.
 # AI SRE
 
+#Notion Notebook link :- https://app.notion.com/p/AI-Site-Reliability-Engineering-3ca9d72fe8ac8000a0ddfeb2311c951e?source=copy_link
+Every single detail explained
+
 ## Intelligent Incident Detection, Root Cause Analysis and Automated Remediation
 
 AI SRE is an AI powered Site Reliability Engineering platform designed to monitor production services, detect abnormal behavior, analyze incidents, identify probable root causes, and assist with safe remediation.
