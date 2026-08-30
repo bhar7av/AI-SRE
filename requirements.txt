@@ -1,8 +1,7 @@
--e git+https://github.com/bhar7av/AI-SRE.git@25aa2429e3469602da3866d0055d2fb19cb2c87f#egg=ai_sre
+
 annotated-doc==0.0.5
 annotated-types==0.8.0
 anyio==4.14.2
--e git+https://github.com/bhar7av/AI-SRE.git@25aa2429e3469602da3866d0055d2fb19cb2c87f#egg=backend
 certifi==2026.7.22
 click==8.5.0
 fastapi==0.141.1
