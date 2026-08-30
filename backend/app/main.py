@@ -14,9 +14,16 @@ from backend.app.models.incident import Incident
 from backend.app.models.audit_log import AuditLog
 
 
-# Create database tables
+# ============================================================
+# CREATE DATABASE TABLES
+# ============================================================
+
 Base.metadata.create_all(bind=engine)
 
+
+# ============================================================
+# FASTAPI APPLICATION
+# ============================================================
 
 app = FastAPI(
     title="AI-SRE",
@@ -26,12 +33,16 @@ app = FastAPI(
 
 
 # ============================================================
-# CORS
+# CORS CONFIGURATION
 # ============================================================
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        # Production frontend
+        "https://ai-sre-1.onrender.com",
+
+        # Local development
         "http://127.0.0.1:5175",
         "http://localhost:5175",
         "http://127.0.0.1:5176",
@@ -48,7 +59,7 @@ app.add_middleware(
 
 
 # ============================================================
-# ROOT
+# ROOT ENDPOINT
 # ============================================================
 
 @app.get("/")
