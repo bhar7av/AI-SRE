@@ -17,8 +17,7 @@ export default function RemediationCard({
           <div>
             <h3>No remediation plan</h3>
             <p>
-              A remediation plan is not currently available for this
-              incident.
+              A remediation plan is not currently available for this incident.
             </p>
           </div>
         </div>
@@ -28,12 +27,10 @@ export default function RemediationCard({
 
   const approved = incident?.status === "investigating";
   const resolved = incident?.status === "resolved";
-
   const risk = remediation.risk || "medium";
 
   return (
     <section className="remediation-card">
-      {/* Header */}
       <div className="remediation-header">
         <div>
           <div className="section-eyebrow">REMEDIATION</div>
@@ -53,7 +50,6 @@ export default function RemediationCard({
         </div>
       </div>
 
-      {/* Summary */}
       <div className="remediation-summary">
         <div className="remediation-summary-item">
           <span className="summary-label">ACTION</span>
@@ -77,7 +73,6 @@ export default function RemediationCard({
         </div>
       </div>
 
-      {/* Reason */}
       <div className="remediation-block">
         <div className="block-label">WHY THIS ACTION</div>
 
@@ -86,7 +81,6 @@ export default function RemediationCard({
         </p>
       </div>
 
-      {/* Recommendation */}
       {remediation.recommendation && (
         <div className="remediation-block">
           <div className="block-label">RECOMMENDATION</div>
@@ -97,7 +91,6 @@ export default function RemediationCard({
         </div>
       )}
 
-      {/* Steps */}
       {Array.isArray(remediation.steps) &&
         remediation.steps.length > 0 && (
           <div className="remediation-block">
@@ -122,7 +115,6 @@ export default function RemediationCard({
           </div>
         )}
 
-      {/* Safety notice */}
       <div className="remediation-safety">
         <div className="safety-icon">!</div>
 
@@ -138,7 +130,6 @@ export default function RemediationCard({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="remediation-actions">
         {!approved && !resolved && (
           <button
@@ -148,9 +139,7 @@ export default function RemediationCard({
             className="remediation-button remediation-button-primary"
           >
             <span>
-              {loading
-                ? "Approving..."
-                : "Approve remediation"}
+              {loading ? "Approving..." : "Approve remediation"}
             </span>
 
             <span className="button-arrow">→</span>
@@ -165,9 +154,7 @@ export default function RemediationCard({
             className="remediation-button remediation-button-primary"
           >
             <span>
-              {loading
-                ? "Executing..."
-                : "Execute approved action"}
+              {loading ? "Executing..." : "Execute approved action"}
             </span>
 
             <span className="button-arrow">→</span>
@@ -182,9 +169,7 @@ export default function RemediationCard({
             className="remediation-button remediation-button-danger"
           >
             <span>
-              {loading
-                ? "Rolling back..."
-                : "Rollback remediation"}
+              {loading ? "Rolling back..." : "Rollback remediation"}
             </span>
 
             <span className="button-arrow">↶</span>
@@ -193,8 +178,8 @@ export default function RemediationCard({
 
         {resolved && (
           <p className="remediation-status">
-            Incident resolved. Rollback is available if the
-            remediation needs to be reversed.
+            Incident resolved. Rollback is available if the remediation
+            needs to be reversed.
           </p>
         )}
       </div>

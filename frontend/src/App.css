@@ -1659,3 +1659,444 @@ button:disabled {
     gap: 8px;
   }
 }
+
+/* ============================================================
+   REMEDIATION CARD
+   ============================================================ */
+
+.remediation-card {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 28px;
+  margin-top: 24px;
+
+  background: #111111;
+  border: 1px solid #292929;
+  border-radius: 14px;
+
+  color: #f5f5f5;
+}
+
+.remediation-empty {
+  min-height: 180px;
+}
+
+.remediation-empty-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.empty-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #303030;
+  border-radius: 10px;
+
+  color: #777;
+  font-size: 18px;
+}
+
+.remediation-empty h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #eeeeee;
+}
+
+.remediation-empty p {
+  margin: 0;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.remediation-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+
+  padding-bottom: 24px;
+  border-bottom: 1px solid #252525;
+}
+
+.section-eyebrow {
+  margin-bottom: 9px;
+
+  color: #6f6f6f;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.7px;
+  text-transform: uppercase;
+}
+
+.remediation-title {
+  margin: 0;
+
+  color: #f5f5f5;
+  font-size: 23px;
+  line-height: 1.25;
+  font-weight: 650;
+  letter-spacing: -0.3px;
+}
+
+.remediation-subtitle {
+  margin: 8px 0 0;
+
+  color: #777;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.risk-badge {
+  flex-shrink: 0;
+
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  padding: 7px 11px;
+
+  border: 1px solid #3b3030;
+  border-radius: 999px;
+
+  color: #cfcfcf;
+  background: #171313;
+
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.risk-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+  background: #d7a85b;
+
+  box-shadow: 0 0 0 3px rgba(215, 168, 91, 0.08);
+}
+
+
+/* ============================================================
+   SUMMARY
+   ============================================================ */
+
+.remediation-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+
+  margin-top: 20px;
+}
+
+.remediation-summary-item {
+  min-width: 0;
+  padding: 15px 16px;
+
+  background: #151515;
+  border: 1px solid #252525;
+  border-radius: 9px;
+}
+
+.summary-label {
+  display: block;
+  margin-bottom: 8px;
+
+  color: #626262;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.summary-value {
+  display: block;
+
+  color: #e5e5e5;
+  font-size: 13px;
+  font-weight: 600;
+
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ============================================================
+   CONTENT BLOCKS
+   ============================================================ */
+
+.remediation-block {
+  margin-top: 22px;
+}
+
+.block-label {
+  margin-bottom: 9px;
+
+  color: #686868;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.block-text {
+  margin: 0;
+
+  color: #b5b5b5;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+
+/* ============================================================
+   EXECUTION STEPS
+   ============================================================ */
+
+.remediation-steps {
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid #252525;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.remediation-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+
+  padding: 14px 16px;
+
+  background: #141414;
+
+  border-bottom: 1px solid #242424;
+}
+
+.remediation-step:last-child {
+  border-bottom: none;
+}
+
+.step-number {
+  flex: 0 0 28px;
+
+  width: 28px;
+  height: 28px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #303030;
+  border-radius: 7px;
+
+  color: #777;
+  background: #191919;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.step-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.step-content p {
+  margin: 4px 0 0;
+
+  color: #bdbdbd;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   SAFETY NOTICE
+   ============================================================ */
+
+.remediation-safety {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+
+  margin-top: 22px;
+  padding: 15px 16px;
+
+  background: #171513;
+  border: 1px solid #393128;
+  border-radius: 10px;
+}
+
+.safety-icon {
+  flex: 0 0 24px;
+
+  width: 24px;
+  height: 24px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid #514737;
+  border-radius: 50%;
+
+  color: #c8a66a;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.safety-title {
+  margin: 0 0 4px;
+
+  color: #d8d0c2;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.safety-text {
+  margin: 0;
+
+  color: #817c74;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+
+.remediation-actions {
+  margin-top: 22px;
+}
+
+.remediation-button {
+  width: 100%;
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 16px;
+
+  border-radius: 9px;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.remediation-button-primary {
+  color: #111111;
+  background: #f1f1f1;
+  border: 1px solid #f1f1f1;
+}
+
+.remediation-button-primary:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.remediation-button-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.remediation-button-danger {
+  color: #e8b0b0;
+  background: #211616;
+  border: 1px solid #553232;
+}
+
+.remediation-button-danger:hover {
+  background: #281919;
+  border-color: #6a3b3b;
+}
+
+.remediation-button-danger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.button-arrow {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.remediation-status {
+  margin: 10px 0 0;
+
+  color: #707070;
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 760px) {
+  .remediation-card {
+    padding: 20px;
+  }
+
+  .remediation-header {
+    flex-direction: column;
+  }
+
+  .risk-badge {
+    align-self: flex-start;
+  }
+
+  .remediation-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .remediation-card {
+    padding: 16px;
+    border-radius: 10px;
+  }
+
+  .remediation-title {
+    font-size: 19px;
+  }
+
+  .remediation-step {
+    gap: 11px;
+    padding: 12px;
+  }
+
+  .step-number {
+    flex-basis: 25px;
+    width: 25px;
+    height: 25px;
+  }
+}
