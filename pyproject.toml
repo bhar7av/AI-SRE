@@ -14,7 +14,8 @@ dependencies = [
     "psycopg[binary]",
     "pydantic",
     "pydantic-settings",
-    "python-dotenv"
+    "python-dotenv",
+    "huggingface-hub"
 ]
 
 [tool.setuptools.packages.find]
