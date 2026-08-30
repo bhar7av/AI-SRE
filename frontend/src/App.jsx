@@ -1,8 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-
 import "./App.css";
-
-import ServicesPanel from "./components/ServicesPanel";
 
 import {
   approveRemediation,
@@ -15,7 +12,6 @@ import {
 import IncidentDetails from "./components/IncidentDetails";
 import IncidentTable from "./components/IncidentTable";
 
-
 function App() {
   const [incidents, setIncidents] = useState([]);
   const [selectedIncident, setSelectedIncident] = useState(null);
@@ -26,10 +22,7 @@ function App() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-
-  // ============================================================
-  // LOAD INCIDENTS
-  // ============================================================
+  const [lastUpdated, setLastUpdated] = useState(null);
 
   async function loadIncidents(showLoader = true) {
     try {
@@ -37,13 +30,11 @@ function App() {
         setLoading(true);
       }
 
-      setError("");
-
       const data = await getIncidents();
-
       const incidentList = Array.isArray(data) ? data : [];
 
       setIncidents(incidentList);
+      setLastUpdated(new Date());
 
       setSelectedIncident((current) => {
         if (!current) return null;
@@ -54,6 +45,10 @@ function App() {
 
         return updated || null;
       });
+
+      if (showLoader) {
+        setError("");
+      }
     } catch (err) {
       console.error("Failed to load incidents:", err);
 
@@ -69,11 +64,6 @@ function App() {
     }
   }
 
-
-  // ============================================================
-  // AUTO REFRESH
-  // ============================================================
-
   useEffect(() => {
     loadIncidents();
 
@@ -83,11 +73,6 @@ function App() {
 
     return () => clearInterval(interval);
   }, []);
-
-
-  // ============================================================
-  // INCIDENT STATISTICS
-  // ============================================================
 
   const stats = useMemo(() => {
     const normalize = (value) =>
@@ -123,11 +108,6 @@ function App() {
     };
   }, [incidents]);
 
-
-  // ============================================================
-  // DETECT INCIDENTS
-  // ============================================================
-
   async function handleDetect() {
     try {
       setActionLoading(true);
@@ -142,13 +122,17 @@ function App() {
         ? result.length
         : 0;
 
-      setSuccess(
-        count > 0
-          ? `${count} new incident${
-              count === 1 ? "" : "s"
-            } detected.`
-          : "Detection completed. No new incidents detected."
-      );
+      if (count > 0) {
+        setSuccess(
+          `${count} new incident${
+            count === 1 ? "" : "s"
+          } detected.`
+        );
+      } else {
+        setSuccess(
+          "Detection completed. No new incidents detected."
+        );
+      }
     } catch (err) {
       console.error("Detection failed:", err);
 
@@ -162,14 +146,9 @@ function App() {
     }
   }
 
-
-  // ============================================================
-  // APPROVE REMEDIATION
-  // ============================================================
-
   async function handleApprove() {
     if (!selectedIncident?.id) {
-      setError("Please select an incident first.");
+      setError("Select an incident first.");
       return;
     }
 
@@ -179,7 +158,6 @@ function App() {
       setSuccess("");
 
       await approveRemediation(selectedIncident.id);
-
       await loadIncidents(false);
 
       setSuccess(
@@ -198,14 +176,9 @@ function App() {
     }
   }
 
-
-  // ============================================================
-  // EXECUTE REMEDIATION
-  // ============================================================
-
   async function handleExecute() {
     if (!selectedIncident?.id) {
-      setError("Please select an incident first.");
+      setError("Select an incident first.");
       return;
     }
 
@@ -244,14 +217,9 @@ function App() {
     }
   }
 
-
-  // ============================================================
-  // ROLLBACK REMEDIATION
-  // ============================================================
-
   async function handleRollback() {
     if (!selectedIncident?.id) {
-      setError("Please select an incident first.");
+      setError("Select an incident first.");
       return;
     }
 
@@ -283,430 +251,411 @@ function App() {
     }
   }
 
-
-  // ============================================================
-  // SELECT INCIDENT
-  // ============================================================
-
   function handleSelectIncident(incident) {
     setSelectedIncident(incident);
     setError("");
     setSuccess("");
+
+    setTimeout(() => {
+      document
+        .getElementById("incident-details")
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 50);
   }
-
-
-  // ============================================================
-  // UI
-  // ============================================================
 
   return (
     <div className="app-shell">
 
-      {/* ======================================================
-          TOP NAVIGATION
-          ====================================================== */}
-
       <header className="topbar">
+        <div className="topbar-inner">
 
-        <div className="brand">
-
-          <div className="brand-icon">
-            AI
-          </div>
-
-          <div className="brand-text">
-
-            <div className="brand-title">
-              AI-SRE
+          <div className="brand">
+            <div className="brand-icon">
+              AI
             </div>
-
-            <div className="brand-subtitle">
-              Intelligent Incident Response
-            </div>
-
-          </div>
-
-        </div>
-
-
-        <div className="topbar-actions">
-
-          <div className="system-status">
-            System Operational
-          </div>
-
-          <button
-            className="detect-button"
-            onClick={handleDetect}
-            disabled={actionLoading}
-          >
-
-            <span>↻</span>
-
-            {actionLoading
-              ? "Working..."
-              : "Detect Incidents"}
-
-          </button>
-
-        </div>
-
-      </header>
-
-
-      {/* ======================================================
-          HERO
-          ====================================================== */}
-
-      <section className="hero">
-
-        <div className="eyebrow">
-          Site Reliability Operations
-        </div>
-
-        <h1 className="hero-title">
-          Incident Command Center
-        </h1>
-
-        <p className="hero-description">
-          Monitor, analyze, and safely remediate production
-          incidents with AI-assisted root cause analysis.
-        </p>
-
-        <div className="hero-meta">
-
-          <div className="monitoring-status">
-
-            <span className="live-dot" />
-
-            Live monitoring
-
-            <span>•</span>
-
-            Auto-refresh: 3s
-
-          </div>
-
-          <div>
-            Engine / AI-SRE
-          </div>
-
-        </div>
-
-      </section>
-
-
-      {/* ======================================================
-          ALERTS
-          ====================================================== */}
-
-      {error && (
-        <div className="error-message app-message">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="success-message app-message">
-          {success}
-        </div>
-      )}
-
-
-      {/* ======================================================
-          QUICK STATUS
-          ====================================================== */}
-
-      <section className="quick-status">
-
-        <div className="section-heading">
-
-          <div>
-
-            <div className="eyebrow">
-              Quick Status
-            </div>
-
-            <h2>
-              Incident Overview
-            </h2>
-
-          </div>
-
-          <span className="count-badge">
-            {stats.total} events
-          </span>
-
-        </div>
-
-
-        <div className="stats-grid">
-
-          {/* TOTAL */}
-
-          <div className="stat-card">
-
-            <div className="stat-header">
-
-              <span className="stat-label">
-                Total Incidents
-              </span>
-
-              <span className="stat-icon">
-                ◉
-              </span>
-
-            </div>
-
-            <div className="stat-value">
-              {stats.total}
-            </div>
-
-            <div className="stat-description">
-              All detected events
-            </div>
-
-          </div>
-
-
-          {/* OPEN */}
-
-          <div className="stat-card">
-
-            <div className="stat-header">
-
-              <span className="stat-label">
-                Open Incidents
-              </span>
-
-              <span className="stat-icon">
-                !
-              </span>
-
-            </div>
-
-            <div className="stat-value">
-              {stats.open}
-            </div>
-
-            <div className="stat-description">
-              Requiring attention
-            </div>
-
-          </div>
-
-
-          {/* HIGH */}
-
-          <div className="stat-card">
-
-            <div className="stat-header">
-
-              <span className="stat-label">
-                High Severity
-              </span>
-
-              <span className="stat-icon">
-                ▲
-              </span>
-
-            </div>
-
-            <div className="stat-value">
-              {stats.high}
-            </div>
-
-            <div className="stat-description">
-              Elevated risk events
-            </div>
-
-          </div>
-
-
-          {/* RESOLVED */}
-
-          <div className="stat-card">
-
-            <div className="stat-header">
-
-              <span className="stat-label">
-                Resolved
-              </span>
-
-              <span className="stat-icon">
-                ✓
-              </span>
-
-            </div>
-
-            <div className="stat-value">
-              {stats.resolved}
-            </div>
-
-            <div className="stat-description">
-              Completed incidents
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-
-      {/* ======================================================
-          SERVICE REGISTRY
-          ====================================================== */}
-
-      <ServicesPanel />
-
-
-      {/* ======================================================
-          INCIDENT DASHBOARD
-          ====================================================== */}
-
-      <main className="dashboard-grid">
-
-        {/* ====================================================
-            INCIDENT LIST
-            ==================================================== */}
-
-        <section className="panel">
-
-          <div className="panel-header">
 
             <div>
-
-              <h2 className="panel-title">
-                Active Incidents
-              </h2>
-
-              <p className="panel-subtitle">
-                Detected production events and their current
-                status
-              </p>
-
-            </div>
-
-
-            <div className="panel-header-actions">
-
-              <span className="count-badge">
-                {incidents.length}
-              </span>
-
-              <button
-                className="secondary-button"
-                onClick={() => loadIncidents()}
-                disabled={loading || actionLoading}
-              >
-                {loading
-                  ? "Loading..."
-                  : "Refresh"}
-              </button>
-
-            </div>
-
-          </div>
-
-
-          {loading ? (
-
-            <div className="loading">
-
-              <span className="spinner" />
-
-              Loading incidents...
-
-            </div>
-
-          ) : incidents.length === 0 ? (
-
-            <div className="empty-state">
-
-              <div className="empty-state-icon">
-                ◈
+              <div className="brand-title">
+                AI-SRE
               </div>
 
-              <h3>
-                No incidents detected
-              </h3>
+              <div className="brand-subtitle">
+                Intelligent Incident Response
+              </div>
+            </div>
+          </div>
 
-              <p>
-                Run detection to check for new production
-                incidents.
-              </p>
+          <div className="topbar-actions">
 
+            <div className="system-status">
+              <span className="status-dot" />
+              System Operational
             </div>
 
-          ) : (
+            <button
+              className="detect-button"
+              onClick={handleDetect}
+              disabled={actionLoading}
+            >
+              <span className={actionLoading ? "spin" : ""}>
+                ↻
+              </span>
 
-            <IncidentTable
-              incidents={incidents}
-              selectedIncident={selectedIncident}
-              onSelect={handleSelectIncident}
-            />
+              {actionLoading
+                ? "Detecting..."
+                : "Detect Incidents"}
+            </button>
 
-          )}
+          </div>
+        </div>
+      </header>
 
-        </section>
+      <main className="page">
 
+        <section className="hero">
 
-        {/* ====================================================
-            INCIDENT INTELLIGENCE
-            ==================================================== */}
+          <div className="hero-copy">
 
-        <section className="panel incident-intelligence">
+            <div className="eyebrow">
+              Site Reliability Operations
+            </div>
 
-          <div className="panel-header">
+            <h1>
+              Incident
+              <span> Command Center</span>
+            </h1>
 
-            <div>
+            <p>
+              Monitor production services, investigate incidents,
+              understand root causes, and safely execute
+              AI-assisted remediation.
+            </p>
 
-              <h2 className="panel-title">
-                Incident Intelligence
-              </h2>
+            <div className="hero-status">
 
-              <p className="panel-subtitle">
-                AI analysis and controlled remediation
-              </p>
+              <div className="live-status">
+                <span className="live-dot" />
+                <span>Live monitoring</span>
+              </div>
+
+              <span className="separator">/</span>
+
+              <span>Auto-refresh every 3s</span>
+
+              <span className="separator">/</span>
+
+              <span>AI-SRE Engine</span>
 
             </div>
 
           </div>
 
-
-          <IncidentDetails
-            incident={selectedIncident}
-            onApprove={handleApprove}
-            onExecute={handleExecute}
-            onRollback={handleRollback}
-            loading={actionLoading}
-          />
+          <div className="hero-orbit">
+            <div className="orbit-ring ring-one" />
+            <div className="orbit-ring ring-two" />
+            <div className="orbit-core">
+              <span>AI</span>
+            </div>
+          </div>
 
         </section>
 
+        {error && (
+          <div className="message error-message">
+            <div className="message-icon">!</div>
+            <div>
+              <strong>System Error</strong>
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
+
+        {success && (
+          <div className="message success-message">
+            <div className="message-icon">✓</div>
+            <div>
+              <strong>Operation Complete</strong>
+              <span>{success}</span>
+            </div>
+          </div>
+        )}
+
+        <section className="overview-section">
+
+          <div className="section-header">
+
+            <div>
+              <div className="eyebrow">
+                System Overview
+              </div>
+
+              <h2>Incident Overview</h2>
+
+              <p>
+                Current production health and incident activity.
+              </p>
+            </div>
+
+            <div className="last-updated">
+              <span className="live-dot" />
+              {lastUpdated
+                ? `Updated ${lastUpdated.toLocaleTimeString()}`
+                : "Connecting"}
+            </div>
+
+          </div>
+
+          <div className="stats-grid">
+
+            <StatCard
+              label="Total Incidents"
+              value={stats.total}
+              description="All detected events"
+              icon="◎"
+            />
+
+            <StatCard
+              label="Open"
+              value={stats.open}
+              description="Requiring attention"
+              icon="!"
+              active={stats.open > 0}
+            />
+
+            <StatCard
+              label="High Severity"
+              value={stats.high + stats.critical}
+              description="Elevated risk events"
+              icon="▲"
+              active={stats.high + stats.critical > 0}
+            />
+
+            <StatCard
+              label="Resolved"
+              value={stats.resolved}
+              description="Completed incidents"
+              icon="✓"
+            />
+
+          </div>
+
+        </section>
+
+        <section className="workspace">
+
+          <div className="workspace-header">
+
+            <div>
+              <div className="eyebrow">
+                Operations
+              </div>
+
+              <h2>Incident Operations</h2>
+            </div>
+
+            <button
+              className="refresh-button"
+              onClick={() => loadIncidents()}
+              disabled={loading || actionLoading}
+            >
+              <span className={loading ? "spin" : ""}>
+                ↻
+              </span>
+
+              {loading ? "Refreshing" : "Refresh"}
+            </button>
+
+          </div>
+
+          <div className="operations-grid">
+
+            <section className="panel incidents-panel">
+
+              <div className="panel-header">
+
+                <div>
+                  <div className="panel-kicker">
+                    DETECTION FEED
+                  </div>
+
+                  <h3>Active Incidents</h3>
+
+                  <p>
+                    Production events detected by the AI-SRE
+                    telemetry pipeline.
+                  </p>
+                </div>
+
+                <div className="panel-count">
+                  {incidents.length}
+                </div>
+
+              </div>
+
+              <div className="panel-body">
+
+                {loading ? (
+                  <div className="loading-state">
+                    <div className="loading-spinner" />
+                    <strong>Loading incidents</strong>
+                    <span>
+                      Connecting to the AI-SRE engine...
+                    </span>
+                  </div>
+                ) : incidents.length === 0 ? (
+                  <div className="empty-state">
+
+                    <div className="empty-graphic">
+                      <div className="empty-circle">
+                        ✓
+                      </div>
+                    </div>
+
+                    <h3>No active incidents</h3>
+
+                    <p>
+                      The system has not detected any production
+                      anomalies yet.
+                    </p>
+
+                    <button
+                      className="empty-action"
+                      onClick={handleDetect}
+                      disabled={actionLoading}
+                    >
+                      Run Detection
+                    </button>
+
+                  </div>
+                ) : (
+                  <IncidentTable
+                    incidents={incidents}
+                    selectedIncident={selectedIncident}
+                    onSelect={handleSelectIncident}
+                  />
+                )}
+
+              </div>
+
+              <div className="panel-footer">
+                <span>
+                  Showing {incidents.length} incident
+                  {incidents.length === 1 ? "" : "s"}
+                </span>
+
+                <span className="footer-live">
+                  <span className="live-dot" />
+                  LIVE
+                </span>
+              </div>
+
+            </section>
+
+            <section
+              id="incident-details"
+              className="panel intelligence-panel"
+            >
+
+              <div className="panel-header">
+
+                <div>
+                  <div className="panel-kicker">
+                    INVESTIGATION
+                  </div>
+
+                  <h3>Incident Intelligence</h3>
+
+                  <p>
+                    AI analysis, telemetry evidence and
+                    controlled remediation.
+                  </p>
+                </div>
+
+                {selectedIncident && (
+                  <div className="selected-indicator">
+                    SELECTED
+                  </div>
+                )}
+
+              </div>
+
+              <div className="intelligence-body">
+
+                <IncidentDetails
+                  incident={selectedIncident}
+                  onApprove={handleApprove}
+                  onExecute={handleExecute}
+                  onRollback={handleRollback}
+                  loading={actionLoading}
+                />
+
+              </div>
+
+            </section>
+
+          </div>
+
+        </section>
+
+        <footer className="dashboard-footer">
+
+          <div>
+            <strong>AI-SRE</strong>
+            <span>
+              Intelligent Incident Response Platform
+            </span>
+          </div>
+
+          <div className="footer-capabilities">
+            <span>AI-ASSISTED RCA</span>
+            <span>/</span>
+            <span>HUMAN APPROVAL</span>
+            <span>/</span>
+            <span>AUDITABLE REMEDIATION</span>
+          </div>
+
+        </footer>
+
       </main>
-
-
-      {/* ======================================================
-          FOOTER
-          ====================================================== */}
-
-      <footer className="footer">
-
-        <span>
-          AI-SRE Incident Command Center
-        </span>
-
-        <span>
-          Human-in-the-loop remediation
-        </span>
-
-      </footer>
-
     </div>
   );
 }
 
+function StatCard({
+  label,
+  value,
+  description,
+  icon,
+  active = false,
+}) {
+  return (
+    <div className={`stat-card ${active ? "stat-active" : ""}`}>
+
+      <div className="stat-card-top">
+
+        <span className="stat-label">
+          {label}
+        </span>
+
+        <span className="stat-icon">
+          {icon}
+        </span>
+
+      </div>
+
+      <div className="stat-value">
+        {value}
+      </div>
+
+      <div className="stat-description">
+        {description}
+      </div>
+
+    </div>
+  );
+}
 
 export default App;
