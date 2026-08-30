@@ -9,7 +9,6 @@ load_dotenv()
 
 
 class LLMService:
-
     MODEL = "deepseek-ai/DeepSeek-V3-0324"
 
     @staticmethod
@@ -17,16 +16,14 @@ class LLMService:
         """
         Analyze an incident using the configured Hugging Face LLM.
 
-        The LLM is used for analysis only.
-        It does not directly execute remediation actions.
+        The LLM only performs analysis.
+        It does not approve or execute remediation.
         """
 
         token = os.getenv("HF_TOKEN")
 
         if not token:
-            raise RuntimeError(
-                "HF_TOKEN is not configured."
-            )
+            raise RuntimeError("HF_TOKEN is not configured.")
 
         client = InferenceClient(
             api_key=token
@@ -35,12 +32,9 @@ class LLMService:
         prompt = f"""
 You are an expert Site Reliability Engineer.
 
-Analyze this production incident.
+Analyze the following production incident.
 
-Task:
-{context.get("task", "incident_analysis")}
-
-Use ONLY the evidence provided below.
+Use ONLY the evidence provided in the incident context.
 
 Do not invent:
 - metrics
@@ -67,11 +61,11 @@ Rules:
 
 - confidence must be an integer from 0 to 100.
 - evidence must contain only facts from the provided context.
-- requires_human_approval must be true for remediation.
-- Do NOT return Markdown.
-- Do NOT return headings.
-- Do NOT return ```json.
-- Do NOT explain your answer.
+- requires_human_approval must always be true.
+- Do not return Markdown.
+- Do not return headings.
+- Do not return code fences.
+- Do not explain your answer.
 - Return JSON only.
 
 Incident context:
@@ -101,22 +95,27 @@ Incident context:
             )
 
         except Exception as exc:
-            # Keep the original error visible to the caller.
-            # RemediationService can provide a safe fallback.
             raise RuntimeError(
                 f"LLM request failed: {exc}"
             ) from exc
 
-        text = response.choices[0].message.content
+        if not response.choices:
+            raise RuntimeError(
+                "LLM returned no choices."
+            )
+
+        message = response.choices[0].message
+        text = message.content
 
         if not text:
             raise RuntimeError(
                 "LLM returned an empty response."
             )
 
+        # Hugging Face responses can occasionally contain
+        # surrounding whitespace or Markdown fences.
         text = text.strip()
 
-        # Remove Markdown fences if the model ignores instructions.
         text = re.sub(
             r"^```(?:json)?\s*",
             "",
@@ -132,14 +131,13 @@ Incident context:
 
         text = text.strip()
 
-        # First attempt: direct JSON.
+        # First attempt: direct JSON parsing.
         try:
             result = json.loads(text)
 
         except json.JSONDecodeError:
 
-            # Second attempt:
-            # extract the first JSON object.
+            # Second attempt: locate the first JSON object.
             start = text.find("{")
             end = text.rfind("}")
 
@@ -174,12 +172,33 @@ Incident context:
             "requires_human_approval",
         }
 
-        missing = required_fields - result.keys()
+        missing = required_fields - set(result.keys())
 
         if missing:
             raise RuntimeError(
                 "LLM response missing fields: "
                 f"{sorted(missing)}"
             )
+
+        # Normalize confidence.
+        try:
+            result["confidence"] = int(result["confidence"])
+        except (TypeError, ValueError):
+            result["confidence"] = 0
+
+        result["confidence"] = max(
+            0,
+            min(100, result["confidence"])
+        )
+
+        # Ensure evidence is always a list.
+        if not isinstance(result["evidence"], list):
+            result["evidence"] = [
+                str(result["evidence"])
+            ]
+
+        # Safety invariant:
+        # remediation always requires human approval.
+        result["requires_human_approval"] = True
 
         return result

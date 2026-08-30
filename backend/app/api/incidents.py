@@ -23,10 +23,6 @@ router = APIRouter(
 )
 
 
-# ============================================================
-# CREATE INCIDENT
-# ============================================================
-
 @router.post(
     "",
     response_model=IncidentResponse,
@@ -36,15 +32,8 @@ def create_incident(
     data: IncidentCreate,
     db: Session = Depends(get_db),
 ):
-    return IncidentService.create_incident(
-        db,
-        data,
-    )
+    return IncidentService.create_incident(db, data)
 
-
-# ============================================================
-# GET ALL INCIDENTS
-# ============================================================
 
 @router.get(
     "",
@@ -56,9 +45,15 @@ def get_incidents(
     return IncidentService.get_incidents(db)
 
 
-# ============================================================
-# INCIDENT ANALYSIS / RCA
-# ============================================================
+@router.post(
+    "/detect",
+    response_model=list[IncidentResponse],
+)
+def detect_incidents(
+    db: Session = Depends(get_db),
+):
+    return DetectionService.detect(db)
+
 
 @router.get(
     "/{incident_id}/analysis",
@@ -81,10 +76,6 @@ def analyze_incident(
     return analysis
 
 
-# ============================================================
-# INCIDENT CONTEXT
-# ============================================================
-
 @router.get(
     "/{incident_id}/context",
 )
@@ -105,10 +96,6 @@ def get_incident_context(
 
     return context
 
-
-# ============================================================
-# REMEDIATION PLAN
-# ============================================================
 
 @router.get(
     "/{incident_id}/remediation",
@@ -131,10 +118,6 @@ def get_remediation_plan(
     return plan
 
 
-# ============================================================
-# HUMAN APPROVAL
-# ============================================================
-
 @router.post(
     "/{incident_id}/approve",
 )
@@ -155,10 +138,6 @@ def approve_remediation(
 
     return result
 
-
-# ============================================================
-# REMEDIATION EXECUTION
-# ============================================================
 
 @router.post(
     "/{incident_id}/execute",
@@ -181,10 +160,6 @@ def execute_remediation(
     return result
 
 
-# ============================================================
-# REMEDIATION ROLLBACK
-# ============================================================
-
 @router.post(
     "/{incident_id}/rollback",
 )
@@ -205,10 +180,6 @@ def rollback_remediation(
 
     return result
 
-
-# ============================================================
-# AUDIT LOGS
-# ============================================================
 
 @router.get(
     "/{incident_id}/audit",
@@ -234,24 +205,6 @@ def get_incident_audit(
         for log in logs
     ]
 
-
-# ============================================================
-# DETECT INCIDENTS
-# ============================================================
-
-@router.post(
-    "/detect",
-    response_model=list[IncidentResponse],
-)
-def detect_incidents(
-    db: Session = Depends(get_db),
-):
-    return DetectionService.detect(db)
-
-
-# ============================================================
-# GET SINGLE INCIDENT
-# ============================================================
 
 @router.get(
     "/{incident_id}",

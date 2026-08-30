@@ -1,10 +1,10 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.app.models.incident import Incident
 from backend.app.models.telemetry import Metric
-from backend.app.schemas.incident import IncidentCreate
+from backend.app.models.incident import Incident
 from backend.app.services.incident_service import IncidentService
+from backend.app.schemas.incident import IncidentCreate
 
 
 class DetectionService:
@@ -14,16 +14,39 @@ class DetectionService:
     ERROR_RATE_THRESHOLD = 20.0
 
     @staticmethod
-    def detect(db: Session) -> list[Incident]:
-        created_incidents: list[Incident] = []
+    def detect(
+        db: Session,
+        metric: Metric | None = None,
+    ) -> list[Incident]:
+        """
+        Detect anomalies from telemetry.
 
-        metrics = (
-            db.execute(
-                select(Metric).order_by(Metric.timestamp.desc())
+        If a metric is supplied, only that metric is evaluated.
+        If no metric is supplied, all stored metrics are evaluated.
+        """
+
+        created_incidents = []
+
+        # ---------------------------------------------------------
+        # Determine which metrics should be checked
+        # ---------------------------------------------------------
+
+        if metric is not None:
+            metrics = [metric]
+        else:
+            metrics = (
+                db.execute(
+                    select(Metric).order_by(
+                        Metric.timestamp.desc()
+                    )
+                )
+                .scalars()
+                .all()
             )
-            .scalars()
-            .all()
-        )
+
+        # ---------------------------------------------------------
+        # Evaluate metrics
+        # ---------------------------------------------------------
 
         for metric in metrics:
 
@@ -31,7 +54,7 @@ class DetectionService:
             title = None
             description = None
 
-            # CPU anomaly
+            # CPU
             if (
                 metric.metric_name == "cpu_usage"
                 and metric.value >= DetectionService.CPU_THRESHOLD
@@ -41,12 +64,13 @@ class DetectionService:
                 title = "High CPU Utilization Detected"
 
                 description = (
-                    f"CPU utilization reached {metric.value}%, "
-                    f"exceeding the "
-                    f"{DetectionService.CPU_THRESHOLD}% threshold."
+                    f"CPU utilization reached "
+                    f"{metric.value}%, exceeding the "
+                    f"{DetectionService.CPU_THRESHOLD}% "
+                    f"threshold."
                 )
 
-            # Latency anomaly
+            # Latency
             elif (
                 metric.metric_name == "latency_ms"
                 and metric.value >= DetectionService.LATENCY_THRESHOLD
@@ -56,12 +80,13 @@ class DetectionService:
                 title = "High Service Latency Detected"
 
                 description = (
-                    f"Service latency reached {metric.value} ms, "
-                    f"exceeding the "
-                    f"{DetectionService.LATENCY_THRESHOLD} ms threshold."
+                    f"Service latency reached "
+                    f"{metric.value} ms, exceeding the "
+                    f"{DetectionService.LATENCY_THRESHOLD} ms "
+                    f"threshold."
                 )
 
-            # Error rate anomaly
+            # Error rate
             elif (
                 metric.metric_name == "error_rate"
                 and metric.value >= DetectionService.ERROR_RATE_THRESHOLD
@@ -71,15 +96,20 @@ class DetectionService:
                 title = "High Error Rate Detected"
 
                 description = (
-                    f"Error rate reached {metric.value}%, "
-                    f"exceeding the "
-                    f"{DetectionService.ERROR_RATE_THRESHOLD}% threshold."
+                    f"Error rate reached "
+                    f"{metric.value}%, exceeding the "
+                    f"{DetectionService.ERROR_RATE_THRESHOLD}% "
+                    f"threshold."
                 )
 
+            # No anomaly
             if severity is None:
                 continue
 
-            # Prevent duplicate active incidents.
+            # -----------------------------------------------------
+            # Prevent duplicate active incidents
+            # -----------------------------------------------------
+
             existing = db.execute(
                 select(Incident).where(
                     Incident.service == metric.service_id,
@@ -92,6 +122,10 @@ class DetectionService:
 
             if existing is not None:
                 continue
+
+            # -----------------------------------------------------
+            # Create incident
+            # -----------------------------------------------------
 
             incident_data = IncidentCreate(
                 service=metric.service_id,
@@ -109,92 +143,3 @@ class DetectionService:
             created_incidents.append(incident)
 
         return created_incidents
-
-    @staticmethod
-    def detect_metric(
-        db: Session,
-        metric: Metric,
-    ) -> Incident | None:
-        """
-        Detect an anomaly immediately for a newly created metric.
-
-        This avoids scanning the entire metrics table every time
-        telemetry is received.
-        """
-
-        severity = None
-        title = None
-        description = None
-
-        if (
-            metric.metric_name == "cpu_usage"
-            and metric.value >= DetectionService.CPU_THRESHOLD
-        ):
-            severity = "high"
-
-            title = "High CPU Utilization Detected"
-
-            description = (
-                f"CPU utilization reached {metric.value}%, "
-                f"exceeding the "
-                f"{DetectionService.CPU_THRESHOLD}% threshold."
-            )
-
-        elif (
-            metric.metric_name == "latency_ms"
-            and metric.value >= DetectionService.LATENCY_THRESHOLD
-        ):
-            severity = "high"
-
-            title = "High Service Latency Detected"
-
-            description = (
-                f"Service latency reached {metric.value} ms, "
-                f"exceeding the "
-                f"{DetectionService.LATENCY_THRESHOLD} ms threshold."
-            )
-
-        elif (
-            metric.metric_name == "error_rate"
-            and metric.value >= DetectionService.ERROR_RATE_THRESHOLD
-        ):
-            severity = "critical"
-
-            title = "High Error Rate Detected"
-
-            description = (
-                f"Error rate reached {metric.value}%, "
-                f"exceeding the "
-                f"{DetectionService.ERROR_RATE_THRESHOLD}% threshold."
-            )
-
-        if severity is None:
-            return None
-
-        # Don't create another active incident for
-        # the same service and anomaly.
-        existing = db.execute(
-            select(Incident).where(
-                Incident.service == metric.service_id,
-                Incident.title == title,
-                Incident.status.in_(
-                    ["open", "investigating"]
-                ),
-            )
-        ).scalars().first()
-
-        if existing is not None:
-            return existing
-
-        incident_data = IncidentCreate(
-            service=metric.service_id,
-            severity=severity,
-            title=title,
-            description=description,
-            source="automatic_detection",
-        )
-
-        return IncidentService.create_incident(
-            db,
-            incident_data,
-        )

@@ -31,8 +31,7 @@ def create_metric(
     db: Session = Depends(get_db),
 ):
     """
-    Store a telemetry metric and immediately run
-    anomaly detection against the latest telemetry.
+    Store telemetry and immediately run anomaly detection.
     """
 
     metric = Metric(
@@ -46,8 +45,15 @@ def create_metric(
     db.commit()
     db.refresh(metric)
 
-    # Automatically run anomaly detection
-    DetectionService.detect(db)
+    # Automatically check the newly received telemetry.
+    detected_incidents = DetectionService.detect(
+        db,
+        metric=metric,
+    )
+
+    # We intentionally keep the telemetry response unchanged.
+    # The incident is created in the background of this request flow
+    # and can be discovered by the frontend through the incidents API.
 
     return metric
 
@@ -60,7 +66,9 @@ def get_metrics(
     service_id: str | None = None,
     db: Session = Depends(get_db),
 ):
-    query = select(Metric).order_by(Metric.timestamp.desc())
+    query = select(Metric).order_by(
+        Metric.timestamp.desc()
+    )
 
     if service_id:
         query = query.where(
@@ -81,10 +89,6 @@ def create_log(
     data: LogCreate,
     db: Session = Depends(get_db),
 ):
-    """
-    Store an application log.
-    """
-
     log = LogEvent(
         service_id=data.service_id,
         level=data.level,
