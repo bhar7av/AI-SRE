@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import "./App.css";
 
+import ServicesPanel from "./components/ServicesPanel";
+
 import {
   approveRemediation,
   detectIncidents,
@@ -13,6 +15,7 @@ import {
 import IncidentDetails from "./components/IncidentDetails";
 import IncidentTable from "./components/IncidentTable";
 
+
 function App() {
   const [incidents, setIncidents] = useState([]);
   const [selectedIncident, setSelectedIncident] = useState(null);
@@ -22,6 +25,11 @@ function App() {
 
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+
+  // ============================================================
+  // LOAD INCIDENTS
+  // ============================================================
 
   async function loadIncidents(showLoader = true) {
     try {
@@ -61,6 +69,11 @@ function App() {
     }
   }
 
+
+  // ============================================================
+  // AUTO REFRESH
+  // ============================================================
+
   useEffect(() => {
     loadIncidents();
 
@@ -70,6 +83,11 @@ function App() {
 
     return () => clearInterval(interval);
   }, []);
+
+
+  // ============================================================
+  // INCIDENT STATISTICS
+  // ============================================================
 
   const stats = useMemo(() => {
     const normalize = (value) =>
@@ -105,6 +123,11 @@ function App() {
     };
   }, [incidents]);
 
+
+  // ============================================================
+  // DETECT INCIDENTS
+  // ============================================================
+
   async function handleDetect() {
     try {
       setActionLoading(true);
@@ -139,6 +162,11 @@ function App() {
     }
   }
 
+
+  // ============================================================
+  // APPROVE REMEDIATION
+  // ============================================================
+
   async function handleApprove() {
     if (!selectedIncident?.id) {
       setError("Please select an incident first.");
@@ -169,6 +197,11 @@ function App() {
       setActionLoading(false);
     }
   }
+
+
+  // ============================================================
+  // EXECUTE REMEDIATION
+  // ============================================================
 
   async function handleExecute() {
     if (!selectedIncident?.id) {
@@ -211,6 +244,11 @@ function App() {
     }
   }
 
+
+  // ============================================================
+  // ROLLBACK REMEDIATION
+  // ============================================================
+
   async function handleRollback() {
     if (!selectedIncident?.id) {
       setError("Please select an incident first.");
@@ -245,18 +283,28 @@ function App() {
     }
   }
 
+
+  // ============================================================
+  // SELECT INCIDENT
+  // ============================================================
+
   function handleSelectIncident(incident) {
     setSelectedIncident(incident);
     setError("");
     setSuccess("");
   }
 
+
+  // ============================================================
+  // UI
+  // ============================================================
+
   return (
     <div className="app-shell">
 
-      {/* =====================================================
+      {/* ======================================================
           TOP NAVIGATION
-          ===================================================== */}
+          ====================================================== */}
 
       <header className="topbar">
 
@@ -267,6 +315,7 @@ function App() {
           </div>
 
           <div className="brand-text">
+
             <div className="brand-title">
               AI-SRE
             </div>
@@ -274,9 +323,11 @@ function App() {
             <div className="brand-subtitle">
               Intelligent Incident Response
             </div>
+
           </div>
 
         </div>
+
 
         <div className="topbar-actions">
 
@@ -289,11 +340,13 @@ function App() {
             onClick={handleDetect}
             disabled={actionLoading}
           >
+
             <span>↻</span>
 
             {actionLoading
               ? "Working..."
               : "Detect Incidents"}
+
           </button>
 
         </div>
@@ -301,9 +354,9 @@ function App() {
       </header>
 
 
-      {/* =====================================================
+      {/* ======================================================
           HERO
-          ===================================================== */}
+          ====================================================== */}
 
       <section className="hero">
 
@@ -323,10 +376,15 @@ function App() {
         <div className="hero-meta">
 
           <div className="monitoring-status">
+
             <span className="live-dot" />
+
             Live monitoring
+
             <span>•</span>
+
             Auto-refresh: 3s
+
           </div>
 
           <div>
@@ -338,9 +396,9 @@ function App() {
       </section>
 
 
-      {/* =====================================================
+      {/* ======================================================
           ALERTS
-          ===================================================== */}
+          ====================================================== */}
 
       {error && (
         <div className="error-message app-message">
@@ -355,14 +413,16 @@ function App() {
       )}
 
 
-      {/* =====================================================
+      {/* ======================================================
           QUICK STATUS
-          ===================================================== */}
+          ====================================================== */}
 
       <section className="quick-status">
 
         <div className="section-heading">
+
           <div>
+
             <div className="eyebrow">
               Quick Status
             </div>
@@ -370,18 +430,24 @@ function App() {
             <h2>
               Incident Overview
             </h2>
+
           </div>
 
           <span className="count-badge">
             {stats.total} events
           </span>
+
         </div>
 
 
         <div className="stats-grid">
 
+          {/* TOTAL */}
+
           <div className="stat-card">
+
             <div className="stat-header">
+
               <span className="stat-label">
                 Total Incidents
               </span>
@@ -389,6 +455,7 @@ function App() {
               <span className="stat-icon">
                 ◉
               </span>
+
             </div>
 
             <div className="stat-value">
@@ -398,11 +465,16 @@ function App() {
             <div className="stat-description">
               All detected events
             </div>
+
           </div>
 
 
+          {/* OPEN */}
+
           <div className="stat-card">
+
             <div className="stat-header">
+
               <span className="stat-label">
                 Open Incidents
               </span>
@@ -410,6 +482,7 @@ function App() {
               <span className="stat-icon">
                 !
               </span>
+
             </div>
 
             <div className="stat-value">
@@ -419,11 +492,16 @@ function App() {
             <div className="stat-description">
               Requiring attention
             </div>
+
           </div>
 
 
+          {/* HIGH */}
+
           <div className="stat-card">
+
             <div className="stat-header">
+
               <span className="stat-label">
                 High Severity
               </span>
@@ -431,6 +509,7 @@ function App() {
               <span className="stat-icon">
                 ▲
               </span>
+
             </div>
 
             <div className="stat-value">
@@ -440,11 +519,16 @@ function App() {
             <div className="stat-description">
               Elevated risk events
             </div>
+
           </div>
 
 
+          {/* RESOLVED */}
+
           <div className="stat-card">
+
             <div className="stat-header">
+
               <span className="stat-label">
                 Resolved
               </span>
@@ -452,6 +536,7 @@ function App() {
               <span className="stat-icon">
                 ✓
               </span>
+
             </div>
 
             <div className="stat-value">
@@ -461,6 +546,7 @@ function App() {
             <div className="stat-description">
               Completed incidents
             </div>
+
           </div>
 
         </div>
@@ -468,19 +554,29 @@ function App() {
       </section>
 
 
-      {/* =====================================================
-          MAIN GRID
-          ===================================================== */}
+      {/* ======================================================
+          SERVICE REGISTRY
+          ====================================================== */}
+
+      <ServicesPanel />
+
+
+      {/* ======================================================
+          INCIDENT DASHBOARD
+          ====================================================== */}
 
       <main className="dashboard-grid">
 
-        {/* INCIDENT LIST */}
+        {/* ====================================================
+            INCIDENT LIST
+            ==================================================== */}
 
         <section className="panel">
 
           <div className="panel-header">
 
             <div>
+
               <h2 className="panel-title">
                 Active Incidents
               </h2>
@@ -489,7 +585,9 @@ function App() {
                 Detected production events and their current
                 status
               </p>
+
             </div>
+
 
             <div className="panel-header-actions">
 
@@ -502,7 +600,9 @@ function App() {
                 onClick={() => loadIncidents()}
                 disabled={loading || actionLoading}
               >
-                {loading ? "Loading..." : "Refresh"}
+                {loading
+                  ? "Loading..."
+                  : "Refresh"}
               </button>
 
             </div>
@@ -511,12 +611,19 @@ function App() {
 
 
           {loading ? (
+
             <div className="loading">
+
               <span className="spinner" />
+
               Loading incidents...
+
             </div>
+
           ) : incidents.length === 0 ? (
+
             <div className="empty-state">
+
               <div className="empty-state-icon">
                 ◈
               </div>
@@ -529,25 +636,32 @@ function App() {
                 Run detection to check for new production
                 incidents.
               </p>
+
             </div>
+
           ) : (
+
             <IncidentTable
               incidents={incidents}
               selectedIncident={selectedIncident}
               onSelect={handleSelectIncident}
             />
+
           )}
 
         </section>
 
 
-        {/* INCIDENT INTELLIGENCE */}
+        {/* ====================================================
+            INCIDENT INTELLIGENCE
+            ==================================================== */}
 
         <section className="panel incident-intelligence">
 
           <div className="panel-header">
 
             <div>
+
               <h2 className="panel-title">
                 Incident Intelligence
               </h2>
@@ -555,9 +669,11 @@ function App() {
               <p className="panel-subtitle">
                 AI analysis and controlled remediation
               </p>
+
             </div>
 
           </div>
+
 
           <IncidentDetails
             incident={selectedIncident}
@@ -572,9 +688,9 @@ function App() {
       </main>
 
 
-      {/* =====================================================
+      {/* ======================================================
           FOOTER
-          ===================================================== */}
+          ====================================================== */}
 
       <footer className="footer">
 
@@ -591,5 +707,6 @@ function App() {
     </div>
   );
 }
+
 
 export default App;
