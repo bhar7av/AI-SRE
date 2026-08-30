@@ -12,6 +12,7 @@ from backend.app.schemas.telemetry import (
     MetricCreate,
     MetricResponse,
 )
+from backend.app.services.detection_service import DetectionService
 
 
 router = APIRouter(
@@ -29,6 +30,11 @@ def create_metric(
     data: MetricCreate,
     db: Session = Depends(get_db),
 ):
+    """
+    Store a telemetry metric and immediately run
+    anomaly detection against the latest telemetry.
+    """
+
     metric = Metric(
         service_id=data.service_id,
         metric_name=data.metric_name,
@@ -39,6 +45,9 @@ def create_metric(
     db.add(metric)
     db.commit()
     db.refresh(metric)
+
+    # Automatically run anomaly detection
+    DetectionService.detect(db)
 
     return metric
 
@@ -54,7 +63,9 @@ def get_metrics(
     query = select(Metric).order_by(Metric.timestamp.desc())
 
     if service_id:
-        query = query.where(Metric.service_id == service_id)
+        query = query.where(
+            Metric.service_id == service_id
+        )
 
     result = db.execute(query)
 
@@ -70,6 +81,10 @@ def create_log(
     data: LogCreate,
     db: Session = Depends(get_db),
 ):
+    """
+    Store an application log.
+    """
+
     log = LogEvent(
         service_id=data.service_id,
         level=data.level,
@@ -92,10 +107,14 @@ def get_logs(
     service_id: str | None = None,
     db: Session = Depends(get_db),
 ):
-    query = select(LogEvent).order_by(LogEvent.timestamp.desc())
+    query = select(LogEvent).order_by(
+        LogEvent.timestamp.desc()
+    )
 
     if service_id:
-        query = query.where(LogEvent.service_id == service_id)
+        query = query.where(
+            LogEvent.service_id == service_id
+        )
 
     result = db.execute(query)
 
