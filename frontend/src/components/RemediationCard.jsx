@@ -8,123 +8,196 @@ export default function RemediationCard({
 }) {
   if (!remediation) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6">
-        <p className="text-sm text-zinc-500">
-          No remediation plan available.
-        </p>
-      </div>
+      <section className="remediation-card remediation-empty">
+        <div className="section-eyebrow">REMEDIATION</div>
+
+        <div className="remediation-empty-content">
+          <div className="empty-icon">—</div>
+
+          <div>
+            <h3>No remediation plan</h3>
+            <p>
+              A remediation plan is not currently available for this
+              incident.
+            </p>
+          </div>
+        </div>
+      </section>
     );
   }
 
-  const approved =
-    incident?.status === "investigating";
+  const approved = incident?.status === "investigating";
+  const resolved = incident?.status === "resolved";
 
-  const resolved =
-    incident?.status === "resolved";
+  const risk = remediation.risk || "medium";
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6">
-      <div className="flex items-start justify-between gap-4">
+    <section className="remediation-card">
+      {/* Header */}
+      <div className="remediation-header">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-            AI Remediation
-          </p>
+          <div className="section-eyebrow">REMEDIATION</div>
 
-          <h3 className="mt-2 text-lg font-semibold text-white">
-            {remediation.action}
-          </h3>
+          <h2 className="remediation-title">
+            {remediation.action || "Proposed remediation"}
+          </h2>
+
+          <p className="remediation-subtitle">
+            AI-generated action requiring controlled execution.
+          </p>
         </div>
 
-        <span className="rounded-full border border-yellow-500/30 bg-yellow-500/10 px-3 py-1 text-xs font-medium text-yellow-400">
-          {remediation.risk || "medium"} risk
-        </span>
+        <div className="risk-badge">
+          <span className="risk-dot" />
+          {risk} risk
+        </div>
       </div>
 
-      <div className="mt-5 space-y-4">
-        <div>
-          <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-            Reason
-          </p>
-
-          <p className="mt-1 text-sm text-zinc-300">
-            {remediation.reason || "No reason provided."}
-          </p>
+      {/* Summary */}
+      <div className="remediation-summary">
+        <div className="remediation-summary-item">
+          <span className="summary-label">ACTION</span>
+          <span className="summary-value">
+            {remediation.action || "—"}
+          </span>
         </div>
 
-        {remediation.recommendation && (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Recommendation
-            </p>
+        <div className="remediation-summary-item">
+          <span className="summary-label">RISK</span>
+          <span className="summary-value">{risk}</span>
+        </div>
 
-            <p className="mt-1 text-sm text-zinc-300">
-              {remediation.recommendation}
-            </p>
-          </div>
-        )}
+        <div className="remediation-summary-item">
+          <span className="summary-label">APPROVAL</span>
+          <span className="summary-value">
+            {remediation.requires_approval !== false
+              ? "Required"
+              : "Not required"}
+          </span>
+        </div>
+      </div>
 
-        {remediation.steps?.length > 0 && (
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-zinc-500">
-              Steps
-            </p>
+      {/* Reason */}
+      <div className="remediation-block">
+        <div className="block-label">WHY THIS ACTION</div>
 
-            <ol className="mt-2 space-y-2">
+        <p className="block-text">
+          {remediation.reason || "No reason provided."}
+        </p>
+      </div>
+
+      {/* Recommendation */}
+      {remediation.recommendation && (
+        <div className="remediation-block">
+          <div className="block-label">RECOMMENDATION</div>
+
+          <p className="block-text">
+            {remediation.recommendation}
+          </p>
+        </div>
+      )}
+
+      {/* Steps */}
+      {Array.isArray(remediation.steps) &&
+        remediation.steps.length > 0 && (
+          <div className="remediation-block">
+            <div className="block-label">EXECUTION PLAN</div>
+
+            <div className="remediation-steps">
               {remediation.steps.map((step, index) => (
-                <li
+                <div
                   key={index}
-                  className="flex gap-3 text-sm text-zinc-400"
+                  className="remediation-step"
                 >
-                  <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-xs text-zinc-300">
-                    {index + 1}
-                  </span>
+                  <div className="step-number">
+                    {String(index + 1).padStart(2, "0")}
+                  </div>
 
-                  <span>{step}</span>
-                </li>
+                  <div className="step-content">
+                    <p>{step}</p>
+                  </div>
+                </div>
               ))}
-            </ol>
+            </div>
           </div>
         )}
+
+      {/* Safety notice */}
+      <div className="remediation-safety">
+        <div className="safety-icon">!</div>
+
+        <div>
+          <p className="safety-title">
+            Human approval required
+          </p>
+
+          <p className="safety-text">
+            Production remediation is never executed automatically.
+            Review the proposed action before proceeding.
+          </p>
+        </div>
       </div>
 
-      <div className="mt-6 border-t border-zinc-800 pt-5">
+      {/* Actions */}
+      <div className="remediation-actions">
         {!approved && !resolved && (
           <button
+            type="button"
             onClick={onApprove}
             disabled={loading}
-            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="remediation-button remediation-button-primary"
           >
-            {loading
-              ? "Approving..."
-              : "Approve Remediation"}
+            <span>
+              {loading
+                ? "Approving..."
+                : "Approve remediation"}
+            </span>
+
+            <span className="button-arrow">→</span>
           </button>
         )}
 
         {approved && (
           <button
+            type="button"
             onClick={onExecute}
             disabled={loading}
-            className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="remediation-button remediation-button-primary"
           >
-            {loading
-              ? "Executing..."
-              : "Execute Approved Action"}
+            <span>
+              {loading
+                ? "Executing..."
+                : "Execute approved action"}
+            </span>
+
+            <span className="button-arrow">→</span>
           </button>
         )}
 
         {resolved && (
           <button
+            type="button"
             onClick={onRollback}
             disabled={loading}
-            className="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+            className="remediation-button remediation-button-danger"
           >
-            {loading
-              ? "Rolling Back..."
-              : "Rollback Remediation"}
+            <span>
+              {loading
+                ? "Rolling back..."
+                : "Rollback remediation"}
+            </span>
+
+            <span className="button-arrow">↶</span>
           </button>
         )}
+
+        {resolved && (
+          <p className="remediation-status">
+            Incident resolved. Rollback is available if the
+            remediation needs to be reversed.
+          </p>
+        )}
       </div>
-    </div>
+    </section>
   );
 }
-

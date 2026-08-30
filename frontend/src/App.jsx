@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
+import "./App.css";
+
 import {
   approveRemediation,
   detectIncidents,
@@ -10,7 +12,6 @@ import {
 
 import IncidentDetails from "./components/IncidentDetails";
 import IncidentTable from "./components/IncidentTable";
-import StatCard from "./components/StatCard";
 
 function App() {
   const [incidents, setIncidents] = useState([]);
@@ -22,155 +23,87 @@ function App() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
-  // Newly detected automatic incident
-  const [newIncident, setNewIncident] = useState(null);
-
-  // ---------------------------------------------------------
-  // Load incidents
-  // ---------------------------------------------------------
-
-  async function loadIncidents() {
+  async function loadIncidents(showLoader = true) {
     try {
+      if (showLoader) {
+        setLoading(true);
+      }
+
       setError("");
 
       const data = await getIncidents();
 
-      setIncidents((previousIncidents) => {
-        /*
-         * Detect incidents that appeared since the previous request.
-         *
-         * We only show the notification for incidents created
-         * automatically by the detection engine.
-         */
-        if (previousIncidents.length > 0) {
-          const previousIds = new Set(
-            previousIncidents.map(
-              (incident) => incident.id
-            )
-          );
+      const incidentList = Array.isArray(data) ? data : [];
 
-          const newlyDetected = data.find(
-            (incident) =>
-              !previousIds.has(incident.id) &&
-              incident.source === "automatic_detection"
-          );
+      setIncidents(incidentList);
 
-          if (newlyDetected) {
-            setNewIncident(newlyDetected);
+      setSelectedIncident((current) => {
+        if (!current) return null;
 
-            /*
-             * Automatically hide the notification after 6 seconds.
-             */
-            setTimeout(() => {
-              setNewIncident((current) => {
-                if (
-                  current?.id === newlyDetected.id
-                ) {
-                  return null;
-                }
-
-                return current;
-              });
-            }, 6000);
-          }
-        }
-
-        return data;
-      });
-
-      /*
-       * Keep the selected incident synchronized with the
-       * latest backend data.
-       */
-      setSelectedIncident((currentSelected) => {
-        if (!currentSelected) {
-          return null;
-        }
-
-        const updated = data.find(
-          (item) =>
-            item.id === currentSelected.id
+        const updated = incidentList.find(
+          (incident) => incident.id === current.id
         );
 
-        return updated || currentSelected;
+        return updated || null;
       });
     } catch (err) {
-      console.error(err);
+      console.error("Failed to load incidents:", err);
 
       setError(
         err?.response?.data?.detail ||
+          err?.message ||
           "Unable to connect to the AI-SRE backend."
       );
     } finally {
-      setLoading(false);
+      if (showLoader) {
+        setLoading(false);
+      }
     }
   }
-
-  // ---------------------------------------------------------
-  // Initial load + automatic polling
-  // ---------------------------------------------------------
 
   useEffect(() => {
     loadIncidents();
 
-    /*
-     * Check the backend every 3 seconds.
-     *
-     * This allows the dashboard to automatically discover
-     * incidents created by telemetry/anomaly detection.
-     */
     const interval = setInterval(() => {
-      loadIncidents();
+      loadIncidents(false);
     }, 3000);
 
-    return () => {
-      clearInterval(interval);
-    };
+    return () => clearInterval(interval);
   }, []);
 
-  // ---------------------------------------------------------
-  // Statistics
-  // ---------------------------------------------------------
-
   const stats = useMemo(() => {
+    const normalize = (value) =>
+      String(value || "").toLowerCase();
+
     return {
       total: incidents.length,
 
       critical: incidents.filter(
         (incident) =>
-          incident.severity?.toLowerCase() ===
-          "critical"
+          normalize(incident.severity) === "critical"
       ).length,
 
       high: incidents.filter(
         (incident) =>
-          incident.severity?.toLowerCase() ===
-          "high"
+          normalize(incident.severity) === "high"
       ).length,
 
       open: incidents.filter(
         (incident) =>
-          incident.status?.toLowerCase() ===
-          "open"
+          normalize(incident.status) === "open"
       ).length,
 
       investigating: incidents.filter(
         (incident) =>
-          incident.status?.toLowerCase() ===
-          "investigating"
+          normalize(incident.status) === "investigating"
       ).length,
 
       resolved: incidents.filter(
         (incident) =>
-          incident.status?.toLowerCase() ===
-          "resolved"
+          normalize(incident.status) === "resolved"
       ).length,
     };
   }, [incidents]);
-
-  // ---------------------------------------------------------
-  // Manual detection
-  // ---------------------------------------------------------
 
   async function handleDetect() {
     try {
@@ -180,28 +113,25 @@ function App() {
 
       const result = await detectIncidents();
 
-      await loadIncidents();
+      await loadIncidents(false);
 
-      const detectedCount = Array.isArray(result)
+      const count = Array.isArray(result)
         ? result.length
         : 0;
 
-      if (detectedCount > 0) {
-        setSuccess(
-          `${detectedCount} new incident${
-            detectedCount === 1 ? "" : "s"
-          } detected.`
-        );
-      } else {
-        setSuccess(
-          "Detection completed. No new incidents detected."
-        );
-      }
+      setSuccess(
+        count > 0
+          ? `${count} new incident${
+              count === 1 ? "" : "s"
+            } detected.`
+          : "Detection completed. No new incidents detected."
+      );
     } catch (err) {
-      console.error(err);
+      console.error("Detection failed:", err);
 
       setError(
         err?.response?.data?.detail ||
+          err?.message ||
           "Incident detection failed."
       );
     } finally {
@@ -209,12 +139,9 @@ function App() {
     }
   }
 
-  // ---------------------------------------------------------
-  // Approve remediation
-  // ---------------------------------------------------------
-
   async function handleApprove() {
-    if (!selectedIncident) {
+    if (!selectedIncident?.id) {
+      setError("Please select an incident first.");
       return;
     }
 
@@ -223,20 +150,19 @@ function App() {
       setError("");
       setSuccess("");
 
-      await approveRemediation(
-        selectedIncident.id
-      );
+      await approveRemediation(selectedIncident.id);
 
-      await loadIncidents();
+      await loadIncidents(false);
 
       setSuccess(
         "Remediation approved. Execution is now available."
       );
     } catch (err) {
-      console.error(err);
+      console.error("Approval failed:", err);
 
       setError(
         err?.response?.data?.detail ||
+          err?.message ||
           "Remediation approval failed."
       );
     } finally {
@@ -244,12 +170,9 @@ function App() {
     }
   }
 
-  // ---------------------------------------------------------
-  // Execute remediation
-  // ---------------------------------------------------------
-
   async function handleExecute() {
-    if (!selectedIncident) {
+    if (!selectedIncident?.id) {
+      setError("Please select an incident first.");
       return;
     }
 
@@ -258,20 +181,29 @@ function App() {
       setError("");
       setSuccess("");
 
-      await executeRemediation(
+      const result = await executeRemediation(
         selectedIncident.id
       );
 
-      await loadIncidents();
+      await loadIncidents(false);
 
-      setSuccess(
-        "Approved remediation executed successfully."
-      );
+      if (result?.executed === false) {
+        setError(
+          result?.message ||
+            "Execution was blocked."
+        );
+      } else {
+        setSuccess(
+          result?.message ||
+            "Approved remediation executed successfully."
+        );
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Execution failed:", err);
 
       setError(
         err?.response?.data?.detail ||
+          err?.message ||
           "Remediation execution failed."
       );
     } finally {
@@ -279,12 +211,9 @@ function App() {
     }
   }
 
-  // ---------------------------------------------------------
-  // Rollback remediation
-  // ---------------------------------------------------------
-
   async function handleRollback() {
-    if (!selectedIncident) {
+    if (!selectedIncident?.id) {
+      setError("Please select an incident first.");
       return;
     }
 
@@ -293,20 +222,22 @@ function App() {
       setError("");
       setSuccess("");
 
-      await rollbackRemediation(
+      const result = await rollbackRemediation(
         selectedIncident.id
       );
 
-      await loadIncidents();
+      await loadIncidents(false);
 
       setSuccess(
-        "Remediation rollback completed."
+        result?.message ||
+          "Remediation rollback completed successfully."
       );
     } catch (err) {
-      console.error(err);
+      console.error("Rollback failed:", err);
 
       setError(
         err?.response?.data?.detail ||
+          err?.message ||
           "Rollback failed."
       );
     } finally {
@@ -314,282 +245,349 @@ function App() {
     }
   }
 
-  // ---------------------------------------------------------
-  // Select incident from notification
-  // ---------------------------------------------------------
-
-  function handleInvestigate() {
-    if (!newIncident) {
-      return;
-    }
-
-    const incident = incidents.find(
-      (item) => item.id === newIncident.id
-    );
-
-    if (incident) {
-      setSelectedIncident(incident);
-    }
-
-    setNewIncident(null);
+  function handleSelectIncident(incident) {
+    setSelectedIncident(incident);
+    setError("");
+    setSuccess("");
   }
 
-  // ---------------------------------------------------------
-  // UI
-  // ---------------------------------------------------------
-
   return (
-    <div className="min-h-screen bg-zinc-950">
-      {/* =====================================================
-          HEADER
-      ====================================================== */}
+    <div className="app-shell">
 
-      <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between px-6 py-5">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-lg font-bold text-black">
-              AI
+      {/* =====================================================
+          TOP NAVIGATION
+          ===================================================== */}
+
+      <header className="topbar">
+
+        <div className="brand">
+
+          <div className="brand-icon">
+            AI
+          </div>
+
+          <div className="brand-text">
+            <div className="brand-title">
+              AI-SRE
             </div>
 
-            <div>
-              <h1 className="text-lg font-semibold text-white">
-                AI-SRE
-              </h1>
-
-              <p className="text-xs text-zinc-500">
-                Autonomous Incident Response Platform
-              </p>
+            <div className="brand-subtitle">
+              Intelligent Incident Response
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden items-center gap-2 sm:flex">
-              <span className="h-2 w-2 rounded-full bg-green-400" />
+        </div>
 
-              <span className="text-xs text-zinc-400">
-                System Operational
+        <div className="topbar-actions">
+
+          <div className="system-status">
+            System Operational
+          </div>
+
+          <button
+            className="detect-button"
+            onClick={handleDetect}
+            disabled={actionLoading}
+          >
+            <span>↻</span>
+
+            {actionLoading
+              ? "Working..."
+              : "Detect Incidents"}
+          </button>
+
+        </div>
+
+      </header>
+
+
+      {/* =====================================================
+          HERO
+          ===================================================== */}
+
+      <section className="hero">
+
+        <div className="eyebrow">
+          Site Reliability Operations
+        </div>
+
+        <h1 className="hero-title">
+          Incident Command Center
+        </h1>
+
+        <p className="hero-description">
+          Monitor, analyze, and safely remediate production
+          incidents with AI-assisted root cause analysis.
+        </p>
+
+        <div className="hero-meta">
+
+          <div className="monitoring-status">
+            <span className="live-dot" />
+            Live monitoring
+            <span>•</span>
+            Auto-refresh: 3s
+          </div>
+
+          <div>
+            Engine / AI-SRE
+          </div>
+
+        </div>
+
+      </section>
+
+
+      {/* =====================================================
+          ALERTS
+          ===================================================== */}
+
+      {error && (
+        <div className="error-message app-message">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="success-message app-message">
+          {success}
+        </div>
+      )}
+
+
+      {/* =====================================================
+          QUICK STATUS
+          ===================================================== */}
+
+      <section className="quick-status">
+
+        <div className="section-heading">
+          <div>
+            <div className="eyebrow">
+              Quick Status
+            </div>
+
+            <h2>
+              Incident Overview
+            </h2>
+          </div>
+
+          <span className="count-badge">
+            {stats.total} events
+          </span>
+        </div>
+
+
+        <div className="stats-grid">
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-label">
+                Total Incidents
+              </span>
+
+              <span className="stat-icon">
+                ◉
               </span>
             </div>
 
-            <button
-              onClick={handleDetect}
-              disabled={actionLoading}
-              className="rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {actionLoading
-                ? "Working..."
-                : "Run Detection"}
-            </button>
+            <div className="stat-value">
+              {stats.total}
+            </div>
+
+            <div className="stat-description">
+              All detected events
+            </div>
           </div>
+
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-label">
+                Open Incidents
+              </span>
+
+              <span className="stat-icon">
+                !
+              </span>
+            </div>
+
+            <div className="stat-value">
+              {stats.open}
+            </div>
+
+            <div className="stat-description">
+              Requiring attention
+            </div>
+          </div>
+
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-label">
+                High Severity
+              </span>
+
+              <span className="stat-icon">
+                ▲
+              </span>
+            </div>
+
+            <div className="stat-value">
+              {stats.high}
+            </div>
+
+            <div className="stat-description">
+              Elevated risk events
+            </div>
+          </div>
+
+
+          <div className="stat-card">
+            <div className="stat-header">
+              <span className="stat-label">
+                Resolved
+              </span>
+
+              <span className="stat-icon">
+                ✓
+              </span>
+            </div>
+
+            <div className="stat-value">
+              {stats.resolved}
+            </div>
+
+            <div className="stat-description">
+              Completed incidents
+            </div>
+          </div>
+
         </div>
-      </header>
+
+      </section>
+
 
       {/* =====================================================
-          MAIN
-      ====================================================== */}
+          MAIN GRID
+          ===================================================== */}
 
-      <main className="mx-auto max-w-[1600px] px-6 py-8">
-        {/* ---------------------------------------------------
-            PAGE TITLE
-        ---------------------------------------------------- */}
+      <main className="dashboard-grid">
 
-        <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-white">
-            Operations Overview
-          </h2>
+        {/* INCIDENT LIST */}
 
-          <p className="mt-1 text-sm text-zinc-500">
-            Monitor incidents, AI analysis, remediation and
-            execution.
-          </p>
-        </div>
+        <section className="panel">
 
-        {/* ===================================================
-            AUTOMATIC ANOMALY NOTIFICATION
-        ==================================================== */}
+          <div className="panel-header">
 
-        {newIncident && (
-          <div className="mb-6 rounded-2xl border border-red-500/30 bg-red-500/10 p-5 shadow-lg shadow-red-950/20">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-500/20 text-lg font-bold text-red-400">
-                  !
-                </div>
+            <div>
+              <h2 className="panel-title">
+                Active Incidents
+              </h2>
 
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-red-400">
-                    Anomaly Detected
-                  </p>
-
-                  <h3 className="mt-1 text-base font-semibold text-white">
-                    {newIncident.title}
-                  </h3>
-
-                  <p className="mt-1 text-sm text-zinc-400">
-                    {newIncident.service}
-                  </p>
-
-                  <p className="mt-2 text-sm leading-6 text-zinc-300">
-                    {newIncident.description}
-                  </p>
-
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <span className="rounded-md border border-red-500/20 bg-red-500/10 px-2 py-1 text-[11px] font-medium uppercase tracking-wide text-red-400">
-                      {newIncident.severity}
-                    </span>
-
-                    <span className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-400">
-                      {newIncident.id}
-                    </span>
-
-                    <span className="rounded-md border border-zinc-700 bg-zinc-900 px-2 py-1 text-[11px] text-zinc-400">
-                      Automatic Detection
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={handleInvestigate}
-                className="shrink-0 rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800"
-              >
-                Investigate
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================
-            ERROR
-        ==================================================== */}
-
-        {error && (
-          <div className="mb-5 rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-400">
-            {error}
-          </div>
-        )}
-
-        {/* ===================================================
-            SUCCESS
-        ==================================================== */}
-
-        {success && (
-          <div className="mb-5 rounded-xl border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-400">
-            {success}
-          </div>
-        )}
-
-        {/* ===================================================
-            STATISTICS
-        ==================================================== */}
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard
-            title="Total Incidents"
-            value={stats.total}
-            description="All recorded incidents"
-            icon="◈"
-          />
-
-          <StatCard
-            title="Critical"
-            value={stats.critical}
-            description="Requires immediate attention"
-            icon="!"
-          />
-
-          <StatCard
-            title="High Severity"
-            value={stats.high}
-            description="High-priority incidents"
-            icon="▲"
-          />
-
-          <StatCard
-            title="Investigating"
-            value={stats.investigating}
-            description="Awaiting or executing response"
-            icon="◌"
-          />
-
-          <StatCard
-            title="Resolved"
-            value={stats.resolved}
-            description="Successfully resolved"
-            icon="✓"
-          />
-        </div>
-
-        {/* ===================================================
-            INCIDENTS + INTELLIGENCE
-        ==================================================== */}
-
-        <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_1.15fr]">
-          {/* =================================================
-              INCIDENT LIST
-          ================================================== */}
-
-          <section>
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold text-white">
-                  Incidents
-                </h3>
-
-                <p className="mt-1 text-xs text-zinc-500">
-                  Select an incident to investigate.
-                </p>
-              </div>
-
-              <button
-                onClick={loadIncidents}
-                disabled={loading}
-                className="rounded-lg border border-zinc-800 px-3 py-2 text-xs text-zinc-400 transition hover:bg-zinc-900 disabled:opacity-50"
-              >
-                Refresh
-              </button>
-            </div>
-
-            {loading ? (
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-10 text-center">
-                <p className="text-sm text-zinc-500">
-                  Loading incidents...
-                </p>
-              </div>
-            ) : (
-              <IncidentTable
-                incidents={incidents}
-                selectedIncident={selectedIncident}
-                onSelect={setSelectedIncident}
-              />
-            )}
-          </section>
-
-          {/* =================================================
-              INCIDENT INTELLIGENCE
-          ================================================== */}
-
-          <section>
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-white">
-                Incident Intelligence
-              </h3>
-
-              <p className="mt-1 text-xs text-zinc-500">
-                AI analysis and controlled remediation.
+              <p className="panel-subtitle">
+                Detected production events and their current
+                status
               </p>
             </div>
 
-            <IncidentDetails
-              incident={selectedIncident}
-              onApprove={handleApprove}
-              onExecute={handleExecute}
-              onRollback={handleRollback}
-              loading={actionLoading}
+            <div className="panel-header-actions">
+
+              <span className="count-badge">
+                {incidents.length}
+              </span>
+
+              <button
+                className="secondary-button"
+                onClick={() => loadIncidents()}
+                disabled={loading || actionLoading}
+              >
+                {loading ? "Loading..." : "Refresh"}
+              </button>
+
+            </div>
+
+          </div>
+
+
+          {loading ? (
+            <div className="loading">
+              <span className="spinner" />
+              Loading incidents...
+            </div>
+          ) : incidents.length === 0 ? (
+            <div className="empty-state">
+              <div className="empty-state-icon">
+                ◈
+              </div>
+
+              <h3>
+                No incidents detected
+              </h3>
+
+              <p>
+                Run detection to check for new production
+                incidents.
+              </p>
+            </div>
+          ) : (
+            <IncidentTable
+              incidents={incidents}
+              selectedIncident={selectedIncident}
+              onSelect={handleSelectIncident}
             />
-          </section>
-        </div>
+          )}
+
+        </section>
+
+
+        {/* INCIDENT INTELLIGENCE */}
+
+        <section className="panel incident-intelligence">
+
+          <div className="panel-header">
+
+            <div>
+              <h2 className="panel-title">
+                Incident Intelligence
+              </h2>
+
+              <p className="panel-subtitle">
+                AI analysis and controlled remediation
+              </p>
+            </div>
+
+          </div>
+
+          <IncidentDetails
+            incident={selectedIncident}
+            onApprove={handleApprove}
+            onExecute={handleExecute}
+            onRollback={handleRollback}
+            loading={actionLoading}
+          />
+
+        </section>
+
       </main>
+
+
+      {/* =====================================================
+          FOOTER
+          ===================================================== */}
+
+      <footer className="footer">
+
+        <span>
+          AI-SRE Incident Command Center
+        </span>
+
+        <span>
+          Human-in-the-loop remediation
+        </span>
+
+      </footer>
+
     </div>
   );
 }

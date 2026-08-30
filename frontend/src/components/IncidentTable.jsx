@@ -1,36 +1,52 @@
 function severityClass(severity) {
   switch (severity?.toLowerCase()) {
     case "critical":
-      return "border-red-500/30 bg-red-500/10 text-red-400";
+      return "severity-badge severity-critical";
 
     case "high":
-      return "border-orange-500/30 bg-orange-500/10 text-orange-400";
+      return "severity-badge severity-high";
 
     case "medium":
-      return "border-yellow-500/30 bg-yellow-500/10 text-yellow-400";
+      return "severity-badge severity-medium";
 
     case "low":
-      return "border-green-500/30 bg-green-500/10 text-green-400";
+      return "severity-badge severity-low";
 
     default:
-      return "border-zinc-700 bg-zinc-800 text-zinc-300";
+      return "severity-badge severity-default";
   }
 }
 
 function statusClass(status) {
   switch (status?.toLowerCase()) {
     case "open":
-      return "text-orange-400";
+      return "status-badge status-open";
 
     case "investigating":
-      return "text-yellow-400";
+      return "status-badge status-investigating";
 
     case "resolved":
-      return "text-green-400";
+      return "status-badge status-resolved";
 
     default:
-      return "text-zinc-400";
+      return "status-badge status-default";
   }
+}
+
+function StatusDot({ status }) {
+  const value = status?.toLowerCase();
+
+  return (
+    <span
+      className={`status-dot ${
+        value === "resolved"
+          ? "dot-resolved"
+          : value === "open"
+          ? "dot-open"
+          : "dot-investigating"
+      }`}
+    />
+  );
 }
 
 export default function IncidentTable({
@@ -38,106 +54,133 @@ export default function IncidentTable({
   selectedIncident,
   onSelect,
 }) {
-  if (!incidents.length) {
+  if (!incidents?.length) {
     return (
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-10 text-center">
-        <p className="text-zinc-400">
-          No incidents found.
+      <div className="incident-table-empty">
+        <div className="empty-icon">✓</div>
+
+        <h3>No incidents found</h3>
+
+        <p>
+          There are currently no incidents matching the
+          available records.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left">
-          <thead className="border-b border-zinc-800 bg-zinc-950/50">
+    <div className="incident-table-wrapper">
+      <div className="incident-table-scroll">
+        <table className="incident-table">
+          <thead>
             <tr>
-              <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Incident
-              </th>
-
-              <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Service
-              </th>
-
-              <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Severity
-              </th>
-
-              <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Status
-              </th>
-
-              <th className="px-5 py-4 text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                Created
-              </th>
-
-              <th className="px-5 py-4"></th>
+              <th>Incident</th>
+              <th>Service</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th className="action-column" />
             </tr>
           </thead>
 
-          <tbody className="divide-y divide-zinc-800">
-            {incidents.map((incident) => (
-              <tr
-                key={incident.id}
-                onClick={() => onSelect(incident)}
-                className={`cursor-pointer transition hover:bg-zinc-800/50 ${
-                  selectedIncident?.id === incident.id
-                    ? "bg-zinc-800/40"
-                    : ""
-                }`}
-              >
-                <td className="px-5 py-4">
-                  <div>
-                    <p className="font-medium text-white">
-                      {incident.title}
-                    </p>
+          <tbody>
+            {incidents.map((incident) => {
+              const isSelected =
+                selectedIncident?.id === incident.id;
 
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {incident.id}
-                    </p>
-                  </div>
-                </td>
-
-                <td className="px-5 py-4 text-sm text-zinc-300">
-                  {incident.service}
-                </td>
-
-                <td className="px-5 py-4">
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium ${severityClass(
-                      incident.severity
-                    )}`}
-                  >
-                    {incident.severity}
-                  </span>
-                </td>
-
-                <td
-                  className={`px-5 py-4 text-sm font-medium ${statusClass(
-                    incident.status
-                  )}`}
+              return (
+                <tr
+                  key={incident.id}
+                  onClick={() => onSelect(incident)}
+                  className={
+                    isSelected
+                      ? "incident-row selected"
+                      : "incident-row"
+                  }
                 >
-                  {incident.status}
-                </td>
+                  <td className="incident-main-cell">
+                    <div className="incident-title-row">
+                      <span className="incident-indicator" />
 
-                <td className="px-5 py-4 text-xs text-zinc-500">
-                  {incident.created_at
-                    ? new Date(
-                        incident.created_at
-                      ).toLocaleString()
-                    : "—"}
-                </td>
+                      <div>
+                        <div className="incident-title">
+                          {incident.title}
+                        </div>
 
-                <td className="px-5 py-4 text-right text-zinc-500">
-                  →
-                </td>
-              </tr>
-            ))}
+                        <div className="incident-id">
+                          {incident.id}
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+
+                  <td>
+                    <span className="service-name">
+                      {incident.service}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={severityClass(
+                        incident.severity
+                      )}
+                    >
+                      {incident.severity}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span
+                      className={statusClass(
+                        incident.status
+                      )}
+                    >
+                      <StatusDot status={incident.status} />
+                      {incident.status}
+                    </span>
+                  </td>
+
+                  <td>
+                    <span className="created-time">
+                      {incident.created_at
+                        ? new Date(
+                            incident.created_at
+                          ).toLocaleString()
+                        : "—"}
+                    </span>
+                  </td>
+
+                  <td className="action-cell">
+                    <span
+                      className={
+                        isSelected
+                          ? "incident-arrow active"
+                          : "incident-arrow"
+                      }
+                    >
+                      →
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      <div className="incident-table-footer">
+        <span>
+          Showing{" "}
+          <strong>{incidents.length}</strong>{" "}
+          incident{incidents.length !== 1 ? "s" : ""}
+        </span>
+
+        <span className="footer-live">
+          <span className="footer-live-dot" />
+          Live data
+        </span>
       </div>
     </div>
   );
